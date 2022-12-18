@@ -3,4 +3,5 @@ export class NewUserDto {
   lastName: string;
   userName: string;
   password: string;
+  confirmPassword: string;
 }

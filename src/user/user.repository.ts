@@ -8,7 +8,8 @@ import { User, UserDocument } from './schema/user.schema';
 export class UserRepository {
   constructor(@InjectModel(User.name) private UserModel: Model<UserDocument>) {}
 
-  async create(user: User): Promise<User> {
+  //* create a new user
+  async create(user: User): Promise<UserDocument> {
     return this.UserModel.create(user);
   }
 }
