@@ -1,8 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const bcrypt = require('bcrypt');
-
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 
 //* mongoose user schema
 @Schema()
@@ -23,30 +21,21 @@ export class User {
   })
   password: string;
 
-  @Prop({
-    required: true,
-    validate: {
-      //* custom validator to check password and confirmPassword are same or not
-      validator: function (confirmPassword: string): boolean {
-        return this.password === confirmPassword;
-      },
-      message: 'password and confirmPassword must be same.',
-    },
-  })
-  confirmPassword: string;
+  @Prop({ default: null, select: false })
+  refreshToken: string;
 
   @Prop({ default: true, select: false })
   isActive: boolean;
 
-  @Prop({ default: Date.now(), select: false })
+  @Prop({ default: new Date(), select: false })
   createdAt: Date;
 
-  @Prop({ default: Date.now(), select: false })
+  @Prop({ default: new Date(), select: false })
   passwordChangedAt: Date;
 }
 
 //* typescript type for mongoose user schema
-export type UserDocument = User & Document;
+export type UserDocument = HydratedDocument<User>;
 
 //* mongoose user model based on user schema
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -57,9 +46,7 @@ UserSchema.pre('save', function (next) {
   if (this.isModified('password')) {
     //* generate hash for password
     this.password = bcrypt.hashSync(this.password, 10);
-
-    //* prevent confirmPassword to be saved on database
-    this.confirmPassword = undefined;
+    this.passwordChangedAt = new Date();
   }
 
   //* calling next middleware in middleware stack
@@ -68,8 +55,10 @@ UserSchema.pre('save', function (next) {
 
 //* mongoose user schema global methods
 UserSchema.methods.isValidPassword = async function (
-  password,
+  password: string,
+  hash: string,
 ): Promise<boolean> {
   //* check if the given password is correct or not
-  return bcrypt.compare(this.password, password);
+
+  return bcrypt.compare(password, hash);
 };

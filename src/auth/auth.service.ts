@@ -1,48 +1,141 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const JWT = require('jsonwebtoken');
-
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { JwtService } from '@nestjs/jwt';
 
-import { User } from 'src/user/schema/user.schema';
-import { UserRepository } from 'src/user/user.repository';
-import { NewUserDto } from 'src/user/userDto/user.dto';
+import { User, UserDocument } from 'src/Mongoose/user.schema';
+import {
+  JwtPayloadDto,
+  LoginCredentialsDto,
+  NewUserDto,
+} from 'src/DTO/user.dto';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userRepository: UserRepository,
     private readonly config: ConfigService,
+    @InjectModel(User.name) private readonly UserModel: Model<UserDocument>,
+    private readonly jwtService: JwtService,
   ) {}
 
   //* create a new user function
-  async createNewUser(user: NewUserDto): Promise<object> {
-    //* building a new user object
-    const newUserDetails: User = {
-      ...user,
-      createdAt: new Date(),
-      isActive: true,
-      passwordChangedAt: new Date(),
+  async signUp(user: NewUserDto): Promise<unknown> {
+    const newUser = await this.UserModel.create(user);
+
+    const userDetails = {
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      userName: newUser.userName,
     };
 
-    const userData = await this.userRepository.create(newUserDetails);
-    const token = await this.generateJWT({ id: userData._id });
+    const payload = {
+      sub: newUser._id,
+      userName: user.firstName,
+    };
+
+    return this.JwtWithUserDetails(userDetails, payload);
+  }
+
+  //* login route handler function
+  async login(loginCredentials: LoginCredentialsDto) {
+    const user = await this.UserModel.findOne({
+      userName: loginCredentials.userName,
+    }).select('+password');
+
+    if (!user)
+      throw new BadRequestException({
+        message: 'No User Found with given User Name',
+      });
+
+    const isValid = await user.schema.methods.isValidPassword(
+      loginCredentials.password,
+      user.password,
+    );
+
+    if (!isValid)
+      throw new BadRequestException({
+        message: 'Password was wrong - Please Provide correct one',
+      });
+
+    const userDetails = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      userName: user.userName,
+    };
+
+    const payload = {
+      sub: user._id,
+      userName: user.userName,
+    };
+
+    return this.JwtWithUserDetails(userDetails, payload);
+  }
+
+  //* logout route handler function
+  async logout(userId: Types.ObjectId) {
+    //* removing refresh token from db
+    await this.UserModel.findByIdAndUpdate(userId, { refreshToken: '' });
+
+    return { status: 'success' };
+  }
+
+  //* refresh auth token route handler function
+  async refresh(jwtPayload: JwtPayloadDto) {
+    const authToken = await this.generateAuthToken(jwtPayload);
+
+    const user = await this.UserModel.findById(jwtPayload.sub).select(
+      '+refreshToken',
+    );
 
     return {
       status: 'success',
-      token,
+      authToken,
+      refreshToken: user.refreshToken,
       userDetails: {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        userName: userData.userName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userName: user.userName,
       },
     };
   }
 
+  //* ------------------ helper functions ------------------
+  //* generate response data with jwt tokens with userDetails
+  private async JwtWithUserDetails(
+    userDetails: any,
+    payload: JwtPayloadDto,
+  ): Promise<object> {
+    const [authToken, refreshToken] = await Promise.all([
+      this.generateAuthToken(payload),
+      this.generateRefreshToken(payload),
+    ]);
+
+    await this.UserModel.findByIdAndUpdate(payload.sub, {
+      refreshToken: refreshToken,
+    });
+
+    return {
+      status: 'success',
+      authToken,
+      refreshToken,
+      userDetails,
+    };
+  }
+
   //* generate jwt token
-  private async generateJWT(payload: object): Promise<string> {
-    return JWT.sign(payload, this.config.get<string>('JWT_SECRET_KEY'), {
-      expiresIn: '2 days',
+  private async generateAuthToken(payload: JwtPayloadDto): Promise<string> {
+    return this.jwtService.sign(payload, {
+      secret: this.config.get<string>('JWT_SECRET_KEY'),
+      expiresIn: 60 * 15,
+    });
+  }
+
+  //* generate refresh token
+  private async generateRefreshToken(payload: JwtPayloadDto): Promise<string> {
+    return this.jwtService.sign(payload, {
+      secret: this.config.get<string>('JWT_REFRESH_KEY'),
+      expiresIn: 60 * 60 * 24 * 7,
     });
   }
 }

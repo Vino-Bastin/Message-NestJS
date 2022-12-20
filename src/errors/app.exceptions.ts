@@ -31,6 +31,9 @@ export class AppExceptionsFilter implements ExceptionFilter {
       });
     };
 
-    sendErrorResponse(exception.name, exception.message);
+    //* check if error was ocurred in class-validation
+    if (exception.response)
+      sendErrorResponse(exception.name, exception.response.message);
+    else sendErrorResponse(exception.name, exception.message);
   }
 }

@@ -1,10 +1,10 @@
+import { APP_GUARD } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { AuthModule } from '../auth/auth.module';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards';
 
 @Module({
   imports: [
@@ -22,10 +22,14 @@ import { AuthModule } from '../auth/auth.module';
         uri: config.get<string>('DATABASE_URL'),
       }),
     }),
-    //* importing modules
     AuthModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    //* global app guard for jwt verification
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}
