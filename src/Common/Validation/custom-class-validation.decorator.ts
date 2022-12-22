@@ -3,6 +3,7 @@ import {
   registerDecorator,
   ValidationArguments,
 } from 'class-validator';
+import { Types } from 'mongoose';
 
 //* custom class validator decorators
 
@@ -23,6 +24,23 @@ export function IsEqualTo(field: string, validationOptions: ValidationOptions) {
           const [relatedPropertyName] = args.constraints; //* destination field/property name
           const relatedValue = args.object[relatedPropertyName]; //* destination field/property value
           return value === relatedValue; //* check if current field/property value equal to destination field/property value
+        },
+      },
+    });
+  };
+}
+
+//* to check the given mongodbId is valid or not
+export function IsValidMongoDBId(validationOptions: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'isValidMongoDBId',
+      propertyName: propertyName,
+      target: object.constructor,
+      options: validationOptions,
+      validator: {
+        validate(value: any): boolean {
+          return Types.ObjectId.isValid(value);
         },
       },
     });

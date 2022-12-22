@@ -2,7 +2,7 @@ import { MinLength, IsNotEmpty, IsString } from 'class-validator';
 import { IsEqualTo } from 'src/Common/Validation';
 import { Types } from 'mongoose';
 
-//* signUP new user required fields class-validator
+//* signup new user required fields class-validator
 export class NewUserDto {
   @IsNotEmpty()
   @IsString()

@@ -1,29 +1,29 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
 
-import { User, UserDocument } from 'src/Mongoose/user.schema';
 import {
   JwtPayloadDto,
   LoginCredentialsDto,
   NewUserDto,
 } from 'src/DTO/user.dto';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly config: ConfigService,
-    @InjectModel(User.name) private readonly UserModel: Model<UserDocument>,
     private readonly jwtService: JwtService,
+    private readonly userService: UserService,
   ) {}
 
   //* create a new user function
   async signUp(user: NewUserDto): Promise<unknown> {
-    const newUser = await this.UserModel.create(user);
+    const newUser = await this.userService.create(user);
 
     const userDetails = {
+      id: newUser._id,
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       userName: newUser.userName,
@@ -39,16 +39,17 @@ export class AuthService {
 
   //* login route handler function
   async login(loginCredentials: LoginCredentialsDto) {
-    const user = await this.UserModel.findOne({
-      userName: loginCredentials.userName,
-    }).select('+password');
+    const user = await this.userService.fineOneByUserName(
+      loginCredentials.userName,
+      '+password',
+    );
 
     if (!user)
       throw new BadRequestException({
         message: 'No User Found with given User Name',
       });
 
-    const isValid = await user.schema.methods.isValidPassword(
+    const isValid = await this.userService.verifyPassword(
       loginCredentials.password,
       user.password,
     );
@@ -59,6 +60,7 @@ export class AuthService {
       });
 
     const userDetails = {
+      id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
       userName: user.userName,
@@ -75,7 +77,7 @@ export class AuthService {
   //* logout route handler function
   async logout(userId: Types.ObjectId) {
     //* removing refresh token from db
-    await this.UserModel.findByIdAndUpdate(userId, { refreshToken: '' });
+    await this.userService.findByIdAndUpdate(userId, { refreshToken: '' });
 
     return { status: 'success' };
   }
@@ -84,7 +86,8 @@ export class AuthService {
   async refresh(jwtPayload: JwtPayloadDto) {
     const authToken = await this.generateAuthToken(jwtPayload);
 
-    const user = await this.UserModel.findById(jwtPayload.sub).select(
+    const user = await this.userService.findById(
+      jwtPayload.sub,
       '+refreshToken',
     );
 
@@ -93,6 +96,7 @@ export class AuthService {
       authToken,
       refreshToken: user.refreshToken,
       userDetails: {
+        id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         userName: user.userName,
@@ -111,7 +115,7 @@ export class AuthService {
       this.generateRefreshToken(payload),
     ]);
 
-    await this.UserModel.findByIdAndUpdate(payload.sub, {
+    await this.userService.findByIdAndUpdate(payload.sub, {
       refreshToken: refreshToken,
     });
 

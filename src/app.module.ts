@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
+import { UserModule } from './user/user.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { JwtAuthGuard } from './auth/guards';
       }),
     }),
     AuthModule,
+    UserModule,
+    MessageModule,
   ],
   providers: [
     //* global app guard for jwt verification
