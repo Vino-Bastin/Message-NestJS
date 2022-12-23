@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
 import { UserModule } from './user/user.module';
 import { MessageModule } from './message/message.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MessageModule } from './message/message.module';
     AuthModule,
     UserModule,
     MessageModule,
+    CommentModule,
   ],
   providers: [
     //* global app guard for jwt verification

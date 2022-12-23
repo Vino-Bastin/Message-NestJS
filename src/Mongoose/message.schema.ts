@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
 import { User } from './user.schema';
-import { Comment } from './comment.schema';
 
 //* mongoose message Schema
 @Schema()
@@ -21,9 +20,6 @@ export class Message {
 
   @Prop({ required: true, default: new Date() })
   createdAt: Date;
-
-  @Prop({ type: [{ type: Types.ObjectId }], ref: 'Comment' })
-  comments: Comment[];
 
   @Prop({ default: 0 })
   thumbsUp: number; //* 👍
