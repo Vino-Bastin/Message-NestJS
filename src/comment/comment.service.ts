@@ -3,19 +3,21 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { NewComment, ReplyComment } from 'src/DTO/comment.dto';
 import { Comment, CommentDocument } from 'src/Mongoose/comment.schema';
+import { Message, MessageDocument } from 'src/Mongoose/message.schema';
 
 @Injectable()
 export class CommentService {
   constructor(
     @InjectModel(Comment.name)
     private readonly commentModel: Model<CommentDocument>,
+    @InjectModel(Message.name)
+    private readonly messageModel: Model<MessageDocument>,
   ) {}
 
   //* get all comment and reply comments for a message
   async getComments(messageId: Types.ObjectId): Promise<Comment[] | undefined> {
     return this.commentModel
       .find({ messageId: messageId })
-      .select('-messageId') //* deselecting messageId in comments document in db
       .populate('replies') //* populating all the replies
       .populate({
         //* populating all the replies user id
@@ -23,10 +25,9 @@ export class CommentService {
         populate: {
           path: 'createdBy',
           model: 'User',
-          select: ['userName'],
         },
       })
-      .populate({ path: 'createdBy', select: ['userName'] }); //* populating the userName for comment
+      .populate({ path: 'createdBy' }); //* populating the userName for comment
   }
 
   //* create a new comment for a message
@@ -35,6 +36,12 @@ export class CommentService {
     comment: NewComment,
   ): Promise<Comment> {
     //* creating a new comment
+
+    const message = await this.messageModel.findById(messageId);
+
+    message.comments++;
+    message.save();
+
     return this.commentModel.create({ ...comment, messageId });
   }
 

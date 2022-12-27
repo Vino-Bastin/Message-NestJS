@@ -14,15 +14,14 @@ export class MessageService {
 
   //* get all message
   async getAllMessages(): Promise<Message[]> {
-    return this.messageModel
-      .find()
-      .populate({ path: 'createdBy', select: ['userName'] })
-      .select('-__v');
+    return this.messageModel.find().populate({ path: 'createdBy' });
   }
 
   //* get a message
   async getAMessage(messageId: Types.ObjectId): Promise<Message> {
-    return this.messageModel.findById(messageId);
+    return this.messageModel
+      .findById(messageId)
+      .populate({ path: 'createdBy' });
   }
 
   //* create a new message
@@ -40,8 +39,10 @@ export class MessageService {
       updatedMessage.editedAt = new Date();
     }
 
-    return this.messageModel.findByIdAndUpdate(messageId, updatedMessage, {
-      new: true,
-    });
+    return this.messageModel
+      .findByIdAndUpdate(messageId, updatedMessage, {
+        new: true,
+      })
+      .populate({ path: 'createdBy' });
   }
 }

@@ -35,6 +35,9 @@ export class Message {
 
   @Prop({ default: 0 })
   sad: number; //*😌
+
+  @Prop({ default: 0 })
+  comments: number;
 }
 
 //* typescript type for mongoose message schema

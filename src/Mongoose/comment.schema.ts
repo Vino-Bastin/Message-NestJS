@@ -10,10 +10,10 @@ export class Comment {
   @Prop({ required: true })
   comment: string;
 
-  @Prop({ ref: 'Message', type: [{ type: Types.ObjectId }] })
+  @Prop({ ref: 'Message', type: Types.ObjectId })
   messageId: Message;
 
-  @Prop({ required: true, ref: 'User', type: [{ type: Types.ObjectId }] })
+  @Prop({ required: true, ref: 'User', type: Types.ObjectId })
   createdBy: User;
 
   @Prop({ required: true, default: new Date() })
