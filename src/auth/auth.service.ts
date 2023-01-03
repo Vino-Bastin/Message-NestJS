@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-
 import {
   JwtPayloadDto,
   LoginCredentialsDto,
+  LoginResponse,
   NewUserDto,
 } from 'src/DTO/user.dto';
 import { Types } from 'mongoose';
@@ -19,7 +19,7 @@ export class AuthService {
   ) {}
 
   //* create a new user function
-  async signUp(user: NewUserDto): Promise<unknown> {
+  async signUp(user: NewUserDto): Promise<LoginResponse> {
     const newUser = await this.userService.create(user);
 
     const userDetails = {
@@ -38,7 +38,7 @@ export class AuthService {
   }
 
   //* login route handler function
-  async login(loginCredentials: LoginCredentialsDto) {
+  async login(loginCredentials: LoginCredentialsDto): Promise<LoginResponse> {
     const user = await this.userService.fineOneByUserName(
       loginCredentials.userName,
       '+password',
@@ -109,7 +109,7 @@ export class AuthService {
   private async JwtWithUserDetails(
     userDetails: any,
     payload: JwtPayloadDto,
-  ): Promise<object> {
+  ): Promise<LoginResponse> {
     const [authToken, refreshToken] = await Promise.all([
       this.generateAuthToken(payload),
       this.generateRefreshToken(payload),

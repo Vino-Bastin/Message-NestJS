@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import * as morgan from 'morgan';
+import * as cookieParser from 'cookie-parser';
 
 import { AppModule } from './app.module';
 
@@ -19,6 +20,12 @@ async function bootstrap() {
 
   //* morgan middleware to log request
   app.use(morgan('tiny'));
+
+  //* cors
+  app.enableCors();
+
+  //* cookie-parse
+  app.use(cookieParser());
 
   //* starting the application
   const PORT = app.get(ConfigService).get<string>('PORT') || 7000;

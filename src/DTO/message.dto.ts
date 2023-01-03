@@ -9,11 +9,6 @@ import { Types } from 'mongoose';
 import { IsValidMongoDBId } from 'src/Common/Validation';
 
 export class NewMessageDto {
-  @IsValidMongoDBId({
-    message: 'Invalid message creator id',
-  })
-  createdBy: Types.ObjectId;
-
   @IsNotEmpty()
   @IsString()
   message: string;

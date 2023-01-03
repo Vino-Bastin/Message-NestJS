@@ -34,14 +34,12 @@ export class MessageController {
   //* create a new message - /message
   @Post()
   async createNewMessage(@Body() message: NewMessageDto, @Request() req) {
-    if (req.user.sub !== message.createdBy) {
-      throw new BadRequestException({
-        message: 'login user and message origin user id are different',
-      });
-    }
     return {
       status: 'success',
-      data: await this.messageService.createNewMessage(message),
+      data: await this.messageService.createNewMessage({
+        ...message,
+        createdBy: req.user.sub,
+      }),
     };
   }
 

@@ -25,8 +25,11 @@ export class MessageService {
   }
 
   //* create a new message
-  async createNewMessage(message: NewMessageDto): Promise<Message> {
-    return this.messageModel.create(message);
+  async createNewMessage(message: {
+    message: string;
+    createdBy: Types.ObjectId;
+  }): Promise<Message> {
+    return this.messageModel.create({ ...message, createdAt: new Date() });
   }
 
   //* update a message

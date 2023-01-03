@@ -3,12 +3,19 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { PassportStrategy } from '@nestjs/passport';
 import { Model } from 'mongoose';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy } from 'passport-jwt';
 import { Request } from 'express';
 
 import { REFRESH_JWT_STRATEGY } from 'src/Common/Constants';
 import { JwtPayloadDto } from 'src/DTO/user.dto';
 import { User, UserDocument } from 'src/Mongoose/user.schema';
+
+const extractRefreshToken = (req: Request): string => {
+  if (req.cookies.refreshToken) return req.cookies.refreshToken;
+  else if (req.headers.authorization && req.headers.authorization.split(' ')[0])
+    return req.headers.authorization.split(' ')[1];
+  else return '';
+};
 
 //* jwt refresh token authentication strategy - to check wether user having valid refresh token or not
 @Injectable()
@@ -21,7 +28,7 @@ export class RefreshAuthStrategy extends PassportStrategy(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: extractRefreshToken,
       secretOrKey: config.get<string>('JWT_REFRESH_KEY'),
       passReqToCallback: true,
     });
@@ -33,7 +40,7 @@ export class RefreshAuthStrategy extends PassportStrategy(
       .findById(payload.sub)
       .select('+refreshToken');
 
-    const token = req.get('authorization').split(' ')[1];
+    const token = extractRefreshToken(req);
 
     //* check if refresh token and refresh token in db are same if not throw an error
     if (token !== user.refreshToken)

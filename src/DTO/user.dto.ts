@@ -47,3 +47,15 @@ export class JwtPayloadDto {
   sub: Types.ObjectId;
   userName: string;
 }
+
+export interface LoginResponse {
+  refreshToken: string;
+  authToken: string;
+  status: string;
+  userDetails: {
+    id: Types.ObjectId;
+    userName: string;
+    firstName: string;
+    lastName: string;
+  };
+}
